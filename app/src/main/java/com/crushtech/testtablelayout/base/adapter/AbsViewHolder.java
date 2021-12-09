@@ -39,9 +39,7 @@ public class AbsViewHolder {
 			ViewGroup parent, int layoutId, int position) {
 		if (convertView == null) {
 			synchronized (AbsViewHolder.class) {
-				if (convertView == null) {
-					return new AbsViewHolder(context, parent, layoutId, position);
-				}
+				return new AbsViewHolder(context, parent, layoutId, position);
 			}
 		}
 		return (AbsViewHolder) convertView.getTag();

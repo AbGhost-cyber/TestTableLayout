@@ -3,6 +3,8 @@ package com.crushtech.testtablelayout.models;
 import android.graphics.Color;
 import android.widget.TextView;
 
+import java.util.List;
+
 public class TableModel {
 
     private String orgCode;
@@ -22,8 +24,21 @@ public class TableModel {
     private String text12;
     private String text13;
     private String text14;
+    private List<TableModel> children;
 
+    public TableModel(String leftTitle, List<TableModel>children){
+        this.leftTitle = leftTitle;
+        this.children = children;
+    }
     public TableModel(){}
+
+    public void setChildren(List<TableModel> children) {
+        this.children = children;
+    }
+
+    public List<TableModel> getChildren() {
+        return children;
+    }
 
     public String getOrgCode() {
         return orgCode;
@@ -161,6 +176,7 @@ public class TableModel {
     public void setText14(String text14) {
         this.text14 = text14;
     }
+
 
     /**
      * 是否正数

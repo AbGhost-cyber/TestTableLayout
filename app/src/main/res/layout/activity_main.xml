@@ -39,35 +39,34 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:orientation="horizontal">
-                <!--<include layout="@layout/table_sales_right_tab"/>-->
-            </LinearLayout>
+                android:orientation="horizontal" />
         </com.crushtech.testtablelayout.widget.SyncHorizontalScrollView>
     </LinearLayout>
-
     <!-- 此部分是内容部分 用ScrollView实现上下滚动效果 -->
     <com.crushtech.testtablelayout.widget.pullfresh.AbPullToRefreshView
         android:id="@+id/pulltorefreshview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:visibility="visible">
 
         <ScrollView
             android:id="@+id/pull_refresh_scroll"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <LinearLayout
+                android:id="@+id/foolishL"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <!-- 左侧内容的父容器 -->
-                <com.crushtech.testtablelayout.widget.MyListView
+                <ExpandableListView
                     android:id="@+id/left_container_listview"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:scrollbars="none"></com.crushtech.testtablelayout.widget.MyListView>
+                    android:groupIndicator="@null"
+                    android:scrollbars="none" />
 
                 <!-- 右侧内容的父容器 实现水平滚动 -->
                 <com.crushtech.testtablelayout.widget.SyncHorizontalScrollView
@@ -78,14 +77,17 @@
                     android:fillViewport="true"
                     android:scrollbars="none">
 
-                    <com.crushtech.testtablelayout.widget.MyListView
+                    <ExpandableListView
                         android:id="@+id/right_container_listview"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="#ffffff"
+                        android:choiceMode="singleChoice"
+                        android:groupIndicator="@null"
                         android:scrollbars="none" />
                 </com.crushtech.testtablelayout.widget.SyncHorizontalScrollView>
             </LinearLayout>
         </ScrollView>
     </com.crushtech.testtablelayout.widget.pullfresh.AbPullToRefreshView>
+
 </LinearLayout>

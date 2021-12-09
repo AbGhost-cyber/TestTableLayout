@@ -1,10 +1,17 @@
 package com.crushtech.testtablelayout;
 
+import static android.view.View.MeasureSpec.EXACTLY;
+import static android.view.View.MeasureSpec.UNSPECIFIED;
+import static android.view.View.MeasureSpec.makeMeasureSpec;
+
 import android.os.Bundle;
 import android.util.SparseArray;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ExpandableListAdapter;
+import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -12,14 +19,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.crushtech.testtablelayout.base.RefreshParams;
 import com.crushtech.testtablelayout.base.adapter.AbsCommonAdapter;
-import com.crushtech.testtablelayout.base.adapter.AbsViewHolder;
+import com.crushtech.testtablelayout.base.adapter.LeftRegionsAdapter;
+import com.crushtech.testtablelayout.base.adapter.RightRegionsAdapter;
 import com.crushtech.testtablelayout.models.OnlineSaleBean;
 import com.crushtech.testtablelayout.models.TableModel;
 import com.crushtech.testtablelayout.utils.WeakHandler;
 import com.crushtech.testtablelayout.widget.SyncHorizontalScrollView;
 import com.crushtech.testtablelayout.widget.pullfresh.AbPullToRefreshView;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,15 +35,18 @@ public class MainActivity extends AppCompatActivity {
     //表格部分
     private TextView tv_table_title_left;
     private LinearLayout right_title_container;
-    private ListView leftListView;
-    private ListView rightListView;
+    private ExpandableListView leftListView;
+    private ExpandableListView rightListView;
     private AbsCommonAdapter<TableModel> mLeftAdapter, mRightAdapter;
     private SyncHorizontalScrollView titleHorScv;
     private SyncHorizontalScrollView contentHorScv;
     private AbPullToRefreshView pulltorefreshview;
+    private ScrollView scrollView;
+    private LinearLayout foolishL;
     private int pageNo = 0;
+    private LeftRegionsAdapter leftRegionsAdapter;
+    private RightRegionsAdapter rightRegionsAdapter;
     private final WeakHandler mHandler = new WeakHandler();
-    private ArrayList<String> ss = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,20 +55,57 @@ public class MainActivity extends AppCompatActivity {
         init();
     }
 
-    public void init() {
-        findByid();
-        setListener();
-        setData();
+
+    private void setListViewHeight(ExpandableListView listView,
+                                   int group) {
+        ExpandableListAdapter listAdapter = (ExpandableListAdapter) listView.getExpandableListAdapter();
+        int totalHeight = 0;
+        int desiredWidth = makeMeasureSpec(listView.getWidth() * listAdapter.getGroupCount(), EXACTLY);
+        for (int i = 0; i < listAdapter.getGroupCount(); i++) {
+            View groupItem = listAdapter.getGroupView(i, false, null, listView);
+            if (groupItem != null) {
+                groupItem.measure(desiredWidth, UNSPECIFIED);
+
+                totalHeight += groupItem.getMeasuredHeight();
+
+                if (((listView.isGroupExpanded(i)) && (i != group))
+                        || ((!listView.isGroupExpanded(i)) && (i == group))) {
+                    for (int j = 0; j < listAdapter.getChildrenCount(i); j++) {
+                        View listItem = listAdapter.getChildView(i, j, false, null,
+                                listView);
+                        if (listItem != null) {
+                            listItem.measure(desiredWidth, UNSPECIFIED);
+                            totalHeight += listItem.getMeasuredHeight();
+                        }
+
+                    }
+                }
+            }
+
+            ViewGroup.LayoutParams params = listView.getLayoutParams();
+            int height = totalHeight
+                    + (listView.getDividerHeight() * (listAdapter.getGroupCount() - 1));
+            if (height < 10)
+                height = 200;
+            params.height = height;
+            listView.setLayoutParams(params);
+            listView.requestLayout();
+        }
     }
 
-    // 2 items, 3...3
+    public void init() {
+        findByid();
+        //setData();
+    }
+
 
     public void findByid() {
         pulltorefreshview = findViewById(R.id.pulltorefreshview);
-//        pulltorefreshview.setPullRefreshEnable(false);
+        pulltorefreshview.setPullRefreshEnable(false);
         tv_table_title_left = findViewById(R.id.tv_table_title_left);
-        tv_table_title_left.setText("all items");
+        tv_table_title_left.setText("All Items");
         leftListView = findViewById(R.id.left_container_listview);
+        scrollView = findViewById(R.id.pull_refresh_scroll);
         rightListView = findViewById(R.id.right_container_listview);
         right_title_container = findViewById(R.id.right_title_container);
         //getLayoutInflater().inflate(R.layout.table_right_title, right_title_container);
@@ -70,108 +117,112 @@ public class MainActivity extends AppCompatActivity {
         contentHorScv.setScrollView(titleHorScv);
         //  findTitleTextViewIds();
         initTableView();
+        setListener();
     }
 
     public void setUpM() {
         for (int i = 0; i < 15; i++) {
-            View view = getLayoutInflater().inflate(R.layout.table_right_title, right_title_container,false);
+            View view = getLayoutInflater().inflate(R.layout.table_right_title, right_title_container, false);
             ((TextView) view.findViewById(R.id.tv_table_title_0)).setText("列标题 " + i);
             right_title_container.addView(view);
         }
     }
 
-    /**
-     * 初始化标题的TextView的item引用
-     */
-    private void findTitleTextViewIds() {
-        mTitleTvArray = new SparseArray<>();
-        for (int i = 0; i <= 20; i++) {
-            try {
-                Field field = R.id.class.getField("tv_table_title_" + 0);
-                int key = field.getInt(R.id.my_edit_text_1);
-                TextView textView = (TextView) findViewById(key);
-                mTitleTvArray.put(key, textView);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
 
     public void initTableView() {
-        mLeftAdapter = new AbsCommonAdapter<TableModel>(this, R.layout.table_left_item) {
-            @Override
-            public void convert(AbsViewHolder helper, TableModel item, int pos) {
-                TextView tv_table_content_left = helper.getView(R.id.tv_table_content_item_left);
-                tv_table_content_left.setText(item.getLeftTitle());
+        //TOP LEFT
+        ArrayList<TableModel> list = new ArrayList<>();
+        ArrayList<TableModel> TOP250 = new ArrayList<>();
+        ArrayList<TableModel> theMan = new ArrayList<>();
+        theMan.add(new TableModel("LETS GO", null));
+        TOP250.add(new TableModel("The Man", theMan));
+        list.add(new TableModel("TOP 250", TOP250));
+        list.add(new TableModel("Now SHOWING", null));
+        list.add(new TableModel("Coming Soon", null));
+
+        //TOP RIGHT
+        ArrayList<TableModel> list1 = new ArrayList<>();
+        ArrayList<TableModel> subList = new ArrayList<>();
+        ArrayList<TableModel> subList1 = new ArrayList<>();
+        subList1.add(newOne(new ArrayList<>()));
+        subList.add(newOne(subList1));
+        list1.add(newOne(subList));
+        list1.add(newOne(new ArrayList<>()));
+        list1.add(newOne(new ArrayList<>()));
+
+        leftRegionsAdapter = new LeftRegionsAdapter(this, list);
+        rightRegionsAdapter = new RightRegionsAdapter(this, list1);
+
+        leftRegionsAdapter.setClickListener((parent, v, groupPosition, id) -> {
+            if (!parent.isGroupExpanded(groupPosition)) {
+                rightRegionsAdapter.curPos = groupPosition;
+                rightRegionsAdapter.childExpandState = 0;
+                rightRegionsAdapter.notifyDataSetChanged();
+            } else {
+                rightRegionsAdapter.curPos = groupPosition;
+                rightRegionsAdapter.childExpandState = 1;
+                rightRegionsAdapter.notifyDataSetChanged();
             }
-        };
-        mRightAdapter = new AbsCommonAdapter<TableModel>(this, R.layout.table_right_item) {
-            @Override
-            public void convert(AbsViewHolder helper, TableModel item, int pos) {
-                TextView tv_table_content_right_item0 = helper.getView(R.id.tv_table_content_right_item0);
-                TextView tv_table_content_right_item1 = helper.getView(R.id.tv_table_content_right_item1);
-                TextView tv_table_content_right_item2 = helper.getView(R.id.tv_table_content_right_item2);
-                TextView tv_table_content_right_item3 = helper.getView(R.id.tv_table_content_right_item3);
-                TextView tv_table_content_right_item4 = helper.getView(R.id.tv_table_content_right_item4);
-                TextView tv_table_content_right_item5 = helper.getView(R.id.tv_table_content_right_item5);
-                TextView tv_table_content_right_item6 = helper.getView(R.id.tv_table_content_right_item6);
-                TextView tv_table_content_right_item7 = helper.getView(R.id.tv_table_content_right_item7);
-                TextView tv_table_content_right_item8 = helper.getView(R.id.tv_table_content_right_item8);
-                TextView tv_table_content_right_item9 = helper.getView(R.id.tv_table_content_right_item9);
-                TextView tv_table_content_right_item10 = helper.getView(R.id.tv_table_content_right_item10);
-                TextView tv_table_content_right_item11 = helper.getView(R.id.tv_table_content_right_item11);
-                TextView tv_table_content_right_item12 = helper.getView(R.id.tv_table_content_right_item12);
-                TextView tv_table_content_right_item13 = helper.getView(R.id.tv_table_content_right_item13);
-                TextView tv_table_content_right_item14 = helper.getView(R.id.tv_table_content_right_item14);
+            return false;
+        });
 
-                tv_table_content_right_item0.setText(item.getText0());
-                tv_table_content_right_item1.setText(item.getText1());
-                tv_table_content_right_item2.setText(item.getText2());
-                tv_table_content_right_item3.setText(item.getText3());
-                tv_table_content_right_item4.setText(item.getText4());
-                tv_table_content_right_item5.setText(item.getText5());
-                tv_table_content_right_item6.setText(item.getText6());
-                tv_table_content_right_item7.setText(item.getText7());
-                tv_table_content_right_item8.setText(item.getText8());
-                tv_table_content_right_item9.setText(item.getText9());
-                tv_table_content_right_item10.setText(item.getText10());
-                tv_table_content_right_item11.setText(item.getText11());
-                tv_table_content_right_item12.setText(item.getText12());
-                tv_table_content_right_item13.setText(item.getText13());
-                tv_table_content_right_item14.setText(item.getText14());
-
-                //部分行设置颜色凸显
-                item.setTextColor(tv_table_content_right_item0, item.getText0());
-                item.setTextColor(tv_table_content_right_item5, item.getText5());
-                item.setTextColor(tv_table_content_right_item10, item.getText10());
-                item.setTextColor(tv_table_content_right_item14, item.getText14());
-
-                for (int i = 0; i < 15; i++) {
-                    View view = ((LinearLayout) helper.getConvertView()).getChildAt(i);
-                    view.setVisibility(View.VISIBLE);
-                }
+        rightRegionsAdapter.setClickListener((parent, v, groupPosition, id) -> {
+            if (!parent.isGroupExpanded(groupPosition)) {
+                leftRegionsAdapter.curPos = groupPosition;
+                leftRegionsAdapter.childExpandState = 0;
+                leftRegionsAdapter.notifyDataSetChanged();
+            } else {
+                leftRegionsAdapter.curPos = groupPosition;
+                leftRegionsAdapter.childExpandState = 1;
+                leftRegionsAdapter.notifyDataSetChanged();
             }
-        };
-        leftListView.setAdapter(mLeftAdapter);
-        rightListView.setAdapter(mRightAdapter);
+            return false;
+        });
+
+
+        leftListView.setAdapter(leftRegionsAdapter);
+        rightListView.setAdapter(rightRegionsAdapter);
+        setListViewHeight(leftListView, -1);
+        setListViewHeight(rightListView, -1);
+
     }
 
 
     public void setListener() {
         pulltorefreshview.setOnHeaderRefreshListener(view -> mHandler.postDelayed(() -> {
-            pageNo = 0;
-            doGetDatas(0, RefreshParams.REFRESH_DATA);
+            //        pageNo = 0;
+            //      doGetDatas(0, RefreshParams.REFRESH_DATA);
         }, 1000));
         pulltorefreshview.setOnFooterLoadListener(view -> mHandler.postDelayed(() -> doGetDatas(pageNo, RefreshParams.LOAD_DATA), 1000));
-        leftListView.setOnItemClickListener((parent, view, position, id) -> {
-            //跳转界面
-            Toast.makeText(MainActivity.this, "打开某条记录的单独详情", Toast.LENGTH_SHORT).show();
+
+        leftListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
+            rightRegionsAdapter.childExpandState = -1;
+            if (!parent.isGroupExpanded(groupPosition)) {
+                setListViewHeight(parent, groupPosition);
+                setListViewHeight(rightListView, groupPosition);
+                rightListView.expandGroup(groupPosition);
+            } else {
+                rightListView.collapseGroup(groupPosition);
+                leftRegionsAdapter.childExpandState = -1;
+            }
+            return false;
+        });
+        rightListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
+            leftRegionsAdapter.childExpandState = -1;
+            if (!parent.isGroupExpanded(groupPosition)) {
+                setListViewHeight(parent, groupPosition);
+                setListViewHeight(leftListView, groupPosition);
+                leftListView.expandGroup(groupPosition);
+            } else {
+                leftListView.collapseGroup(groupPosition);
+                rightRegionsAdapter.childExpandState = -1;
+            }
+            return false;
         });
     }
 
     public void setData() {
-        doGetDatas(0, RefreshParams.REFRESH_DATA);
+        // doGetDatas(0, RefreshParams.REFRESH_DATA);
     }
 
     //模拟网络请求
@@ -185,7 +236,30 @@ public class MainActivity extends AppCompatActivity {
         } else {
             pulltorefreshview.onFooterLoadFinish();
         }
-        setDatas(onlineSaleBeanList, state);
+        //  setDatas(onlineSaleBeanList, state);
+    }
+
+
+    private TableModel newOne(List<TableModel> children) {
+        TableModel tableMode = new TableModel();
+        tableMode.setLeftTitle("null");
+        tableMode.setText0("null");
+        tableMode.setText1("null");
+        tableMode.setText2("null");
+        tableMode.setText3("null");
+        tableMode.setText4("null");
+        tableMode.setText5("null");
+        tableMode.setText6("null");
+        tableMode.setText7("null");
+        tableMode.setText8("null");
+        tableMode.setText9("null");
+        tableMode.setText10("null");
+        tableMode.setText11("null");
+        tableMode.setText12("null");
+        tableMode.setText13("null");
+        tableMode.setText14("null");
+        tableMode.setChildren(children);
+        return tableMode;
     }
 
     private void setDatas(List<OnlineSaleBean> onlineSaleBeanList, int type) {
@@ -213,10 +287,9 @@ public class MainActivity extends AppCompatActivity {
                 tableMode.setText14(onlineSaleBean.getOnlineSale() + "");
                 mDatas.add(tableMode);
             }
-            boolean isMore;
-            isMore = type == RefreshParams.LOAD_DATA;
-            mLeftAdapter.addData(mDatas, isMore);
-            mRightAdapter.addData(mDatas, isMore);
+            boolean isMore = type == RefreshParams.LOAD_DATA;
+//            mLeftAdapter.addGroupData(mDatas, rightChildren, grandChildrenRgt, isMore);
+//            mRightAdapter.addGroupData(mDatas, leftChildren, isMore);
             //加载数据成功，增加页数
             pageNo++;
             mDatas.clear();
@@ -226,7 +299,6 @@ public class MainActivity extends AppCompatActivity {
                 mLeftAdapter.clearData(true);
                 mRightAdapter.clearData(true);
                 //显示数据为空的视图
-                //                mEmpty.setShowErrorAndPic(getString(R.string.empty_null), 0);
             } else if (type == RefreshParams.LOAD_DATA) {
                 Toast.makeText(MainActivity.this, "请求json失败", Toast.LENGTH_SHORT).show();
             }

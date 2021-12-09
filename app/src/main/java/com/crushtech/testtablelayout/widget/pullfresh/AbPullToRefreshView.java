@@ -10,6 +10,8 @@ import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import androidx.core.widget.NestedScrollView;
+
 import com.crushtech.testtablelayout.widget.ProgressWheel;
 
 /**
@@ -249,7 +251,7 @@ public class AbPullToRefreshView extends LinearLayout {
      */
     /* (non-Javadoc)
      * @see android.view.View#onTouchEvent(android.view.MotionEvent)
-	 */
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 

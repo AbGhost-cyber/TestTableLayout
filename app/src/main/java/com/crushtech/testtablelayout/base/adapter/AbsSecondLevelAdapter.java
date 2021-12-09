@@ -6,31 +6,24 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
-import android.widget.ExpandableListView;
-
-import com.crushtech.testtablelayout.widget.MyExpandedListView;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 
-public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
+public abstract class AbsSecondLevelAdapter<T> extends BaseExpandableListAdapter {
     protected LayoutInflater mInflater;
     protected Context mContext;
     protected List<T> groups;
     protected final int mItemLayoutId;
     protected List<List<T>> children;
-    protected List<LinkedHashMap<T, List<T>>> grandChildren;
 
-    public AbsCommonAdapter(Context context, int itemLayoutId) {
+    public AbsSecondLevelAdapter(Context context, int itemLayoutId) {
         this.mContext = context;
         this.mInflater = LayoutInflater.from(mContext);
         this.mItemLayoutId = itemLayoutId;
         groups = new ArrayList<T>();
         children = new ArrayList<>();
-        grandChildren = new ArrayList<>();
     }
 
     public void addItemData(T mBean, boolean isRefresh) {
@@ -65,7 +58,7 @@ public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
         }
     }
 
-    public void addGroupData(List<T> groups, List<List<T>> children, List<LinkedHashMap<T, List<T>>> grandChildren, boolean isMore) {
+    public void addGroupData(List<T> groups, List<List<T>> children, boolean isMore) {
 
         if (!isMore) {
             this.groups.clear();
@@ -77,10 +70,6 @@ public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
         if (children != null) {
 
             this.children.addAll(children);
-        }
-        if (grandChildren != null) {
-
-            this.grandChildren.addAll(grandChildren);
         }
         notifyDataSetChanged();
     }
@@ -102,34 +91,6 @@ public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
         }
     }
 
-    //    @Override
-//    public int getCount() {
-//        return groups.size();
-//    }
-//
-//    @Override
-//    public T getItem(int position) {
-//        if (groups != null && position >= 0 && position <= (groups.size() - 1)) {
-//            return groups.get(position);
-//        }
-//        return null;
-//    }
-//
-//    @Override
-//    public long getItemId(int position) {
-//        return position;
-//    }
-//
-//    @Override
-//    public View getView(int position, View convertView, ViewGroup parent) {
-//        final AbsViewHolder viewHolder = getViewHolder(
-//                position, convertView, parent
-//        );
-//        convert(viewHolder, getItem(position), position);
-//        return viewHolder.getConvertView();
-//
-//    }
-
 
     @Override
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
@@ -144,34 +105,11 @@ public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
 
     @Override
     public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        final AbsSecondLevelAdapter<T> secondLevelAdapter = new AbsSecondLevelAdapter<T>(mContext, mItemLayoutId) {
-            @Override
-            public void convert(AbsViewHolder helper, T item, int pos) {
-                convert(helper, item, pos);
-            }
-        };
-        List<List<T>> childData = new ArrayList<>();
-        HashMap<T, List<T>> grandChildData = grandChildren.get(groupPosition);
-        for (T key : grandChildData.keySet()) {
-            childData.add(grandChildData.get(key));
-        }
-        List<T> secondLevelTitle = children.get(groupPosition);
-        secondLevelAdapter.addGroupData(secondLevelTitle, childData, true);
-
-        final MyExpandedListView secondLevelLV = new MyExpandedListView(mContext);
-        secondLevelLV.setAdapter(secondLevelAdapter);
-        secondLevelLV.setGroupIndicator(null);
-        secondLevelLV.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
-            int previousGroup = -1;
-
-            @Override
-            public void onGroupExpand(int groupPosition) {
-                if (groupPosition != previousGroup)
-                    secondLevelLV.collapseGroup(previousGroup);
-                previousGroup = groupPosition;
-            }
-        });
-        return secondLevelLV;
+        final AbsViewHolder viewHolder = getViewHolder(
+                groupPosition, convertView, parent
+        );
+        convert(viewHolder, (T) getChild(groupPosition, childPosition), groupPosition);
+        return viewHolder.getConvertView();
     }
 
     @Override
@@ -183,7 +121,7 @@ public abstract class AbsCommonAdapter<T> extends BaseExpandableListAdapter {
     //获取指定分组中的子选项的个数
     @Override
     public int getChildrenCount(int groupPosition) {
-        return 1;
+        return children.get(groupPosition).size();
     }
 
     //        获取指定的分组数据
