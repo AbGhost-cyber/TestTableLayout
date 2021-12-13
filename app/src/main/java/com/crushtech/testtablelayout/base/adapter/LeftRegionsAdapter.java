@@ -3,7 +3,6 @@ package com.crushtech.testtablelayout.base.adapter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,8 +25,8 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
     private final LayoutInflater inflater;
     public int childExpandState = -1;
     public int curPos = -1;
-    private ExpandableListView.OnGroupClickListener clickListener;
-
+    private MyExpandedListView currentListView;
+    private ExpandableListView.OnGroupClickListener childClickListener;
 
     public LeftRegionsAdapter(Activity activity, List<TableModel> items) {
         this.items = items;
@@ -41,14 +40,17 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
         return items.get(groupPosition).getChildren().get(childPosition);
     }
 
-
-    public void setClickListener(ExpandableListView.OnGroupClickListener clickListener) {
-        this.clickListener = clickListener;
-    }
-
     @Override
     public long getChildId(int groupPosition, int childPosition) {
         return childPosition;
+    }
+
+    public MyExpandedListView getCurrentListView() {
+        return currentListView;
+    }
+
+    public void setChildClickListener(ExpandableListView.OnGroupClickListener childClickListener) {
+        this.childClickListener = childClickListener;
     }
 
     @Override
@@ -56,33 +58,23 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
                              boolean isLastChild, View convertView, ViewGroup parent) {
 
         TableModel item = (TableModel) getChild(groupPosition, childPosition);
-        MyExpandedListView expandedListView = (MyExpandedListView) convertView;
+        //  MyExpandedListView expandedListView = (MyExpandedListView) convertView;
 
         if (convertView == null) {
-            expandedListView = new MyExpandedListView(activity);
-            expandedListView.setGroupIndicator(null);
+            currentListView = new MyExpandedListView(activity);
+            currentListView.setGroupIndicator(null);
         }
         LeftCountriesAdapter adapter = new LeftCountriesAdapter(activity, item);
-        expandedListView.setAdapter(adapter);
-        for (int c = 0; c < adapter.getGroupCount(); c++) {
-            expandedListView.expandGroup(c);
-        }
-
-        expandedListView.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
-            @Override
-            public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id) {
-                clickListener.onGroupClick(parent, v, groupPosition, id);
-                return false;
-            }
+        currentListView.setAdapter(adapter);
+        //setCurrentListView(expandedListView);
+//        for (int c = 0; c < adapter.getGroupCount(); c++) {
+//            currentListView.expandGroup(c);
+//        }
+        currentListView.setOnGroupClickListener((parent1, v, groupPosition1, id) -> {
+            childClickListener.onGroupClick(parent1, v, groupPosition1, id);
+            return false;
         });
-        if (childExpandState == 0 && curPos > -1) {
-            expandedListView.expandGroup(curPos);
-            Log.d("TAG", "getChildView: yes ex");
-        } else if (childExpandState == 1 && curPos > -1) {
-            expandedListView.collapseGroup(curPos);
-            Log.d("TAG", "getChildView: yes collapse");
-        }
-        return expandedListView;
+        return currentListView;
     }
 
     @Override
@@ -116,12 +108,12 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
             convertView = inflater.inflate(R.layout.table_left_item, null);
             convertView.setBackgroundColor(Color.parseColor("#F7F3E3"));
         }
-
         TextView name = (TextView) convertView.findViewById(R.id.tv_table_content_item_left);
         name.setText(item.getLeftTitle());
 
         return convertView;
     }
+
 
     @Override
     public boolean hasStableIds() {

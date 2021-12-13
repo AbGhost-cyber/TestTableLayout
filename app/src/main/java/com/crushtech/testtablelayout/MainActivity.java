@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String TAG = MainActivity.class.getSimpleName();
     private SparseArray<TextView> mTitleTvArray;
     //表格部分
     private TextView tv_table_title_left;
@@ -137,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
         theMan.add(new TableModel("LETS GO", null));
         TOP250.add(new TableModel("The Man", theMan));
         list.add(new TableModel("TOP 250", TOP250));
-        list.add(new TableModel("Now SHOWING", null));
-        list.add(new TableModel("Coming Soon", null));
+        list.add(new TableModel("Now SHOWING", TOP250));
+        list.add(new TableModel("Coming Soon", TOP250));
 
         //TOP RIGHT
         ArrayList<TableModel> list1 = new ArrayList<>();
@@ -147,37 +148,11 @@ public class MainActivity extends AppCompatActivity {
         subList1.add(newOne(new ArrayList<>()));
         subList.add(newOne(subList1));
         list1.add(newOne(subList));
-        list1.add(newOne(new ArrayList<>()));
-        list1.add(newOne(new ArrayList<>()));
+        list1.add(newOne(subList));
+        list1.add(newOne(subList));
 
         leftRegionsAdapter = new LeftRegionsAdapter(this, list);
         rightRegionsAdapter = new RightRegionsAdapter(this, list1);
-
-        leftRegionsAdapter.setClickListener((parent, v, groupPosition, id) -> {
-            if (!parent.isGroupExpanded(groupPosition)) {
-                rightRegionsAdapter.curPos = groupPosition;
-                rightRegionsAdapter.childExpandState = 0;
-                rightRegionsAdapter.notifyDataSetChanged();
-            } else {
-                rightRegionsAdapter.curPos = groupPosition;
-                rightRegionsAdapter.childExpandState = 1;
-                rightRegionsAdapter.notifyDataSetChanged();
-            }
-            return false;
-        });
-
-        rightRegionsAdapter.setClickListener((parent, v, groupPosition, id) -> {
-            if (!parent.isGroupExpanded(groupPosition)) {
-                leftRegionsAdapter.curPos = groupPosition;
-                leftRegionsAdapter.childExpandState = 0;
-                leftRegionsAdapter.notifyDataSetChanged();
-            } else {
-                leftRegionsAdapter.curPos = groupPosition;
-                leftRegionsAdapter.childExpandState = 1;
-                leftRegionsAdapter.notifyDataSetChanged();
-            }
-            return false;
-        });
 
 
         leftListView.setAdapter(leftRegionsAdapter);
@@ -185,6 +160,22 @@ public class MainActivity extends AppCompatActivity {
         setListViewHeight(leftListView, -1);
         setListViewHeight(rightListView, -1);
 
+        rightRegionsAdapter.setChildClickListener((parent, v, groupPosition, id) -> {
+            if (!parent.isGroupExpanded(groupPosition)) {
+                leftRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+            } else {
+                leftRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+            }
+            return false;
+        });
+        leftRegionsAdapter.setChildClickListener((parent, v, groupPosition, id) -> {
+            if (!parent.isGroupExpanded(groupPosition)) {
+                rightRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+            } else {
+                rightRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+            }
+            return false;
+        });
     }
 
 
@@ -195,34 +186,51 @@ public class MainActivity extends AppCompatActivity {
         }, 1000));
         pulltorefreshview.setOnFooterLoadListener(view -> mHandler.postDelayed(() -> doGetDatas(pageNo, RefreshParams.LOAD_DATA), 1000));
 
+        handleExpandOnce(leftListView);
+        handleExpandOnce(rightListView);
         leftListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
-            rightRegionsAdapter.childExpandState = -1;
+            //rightRegionsAdapter.childExpandState = -1;
             if (!parent.isGroupExpanded(groupPosition)) {
                 setListViewHeight(parent, groupPosition);
                 setListViewHeight(rightListView, groupPosition);
                 rightListView.expandGroup(groupPosition);
             } else {
                 rightListView.collapseGroup(groupPosition);
-                leftRegionsAdapter.childExpandState = -1;
+                // leftRegionsAdapter.childExpandState = -1;
             }
             return false;
         });
+
         rightListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
-            leftRegionsAdapter.childExpandState = -1;
+            // leftRegionsAdapter.childExpandState = -1;
             if (!parent.isGroupExpanded(groupPosition)) {
                 setListViewHeight(parent, groupPosition);
                 setListViewHeight(leftListView, groupPosition);
                 leftListView.expandGroup(groupPosition);
             } else {
                 leftListView.collapseGroup(groupPosition);
-                rightRegionsAdapter.childExpandState = -1;
+                //rightRegionsAdapter.childExpandState = -1;
             }
             return false;
         });
+
     }
 
     public void setData() {
         // doGetDatas(0, RefreshParams.REFRESH_DATA);
+    }
+
+    public void handleExpandOnce(ExpandableListView listView) {
+        listView.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
+            int previousGroup = -1;
+
+            @Override
+            public void onGroupExpand(int groupPosition) {
+                if (groupPosition != previousGroup)
+                    listView.collapseGroup(previousGroup);
+                previousGroup = groupPosition;
+            }
+        });
     }
 
     //模拟网络请求
