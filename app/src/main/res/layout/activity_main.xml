@@ -43,51 +43,38 @@
         </com.crushtech.testtablelayout.widget.SyncHorizontalScrollView>
     </LinearLayout>
     <!-- 此部分是内容部分 用ScrollView实现上下滚动效果 -->
-    <com.crushtech.testtablelayout.widget.pullfresh.AbPullToRefreshView
-        android:id="@+id/pulltorefreshview"
+    <LinearLayout
+        android:id="@+id/foolishL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="visible">
+        android:orientation="horizontal">
 
-        <ScrollView
-            android:id="@+id/pull_refresh_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <ExpandableListView
+            android:id="@+id/left_container_listview"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_weight="1"
+            android:groupIndicator="@null"
+            android:scrollbars="none" />
 
-            <LinearLayout
-                android:id="@+id/foolishL"
+        <!-- 右侧内容的父容器 实现水平滚动 -->
+        <com.crushtech.testtablelayout.widget.SyncHorizontalScrollView
+            android:id="@+id/content_horsv"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:fillViewport="true"
+            android:scrollbars="none">
+
+            <ExpandableListView
+                android:id="@+id/right_container_listview"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <ExpandableListView
-                    android:id="@+id/left_container_listview"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:groupIndicator="@null"
-                    android:scrollbars="none" />
-
-                <!-- 右侧内容的父容器 实现水平滚动 -->
-                <com.crushtech.testtablelayout.widget.SyncHorizontalScrollView
-                    android:id="@+id/content_horsv"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="3"
-                    android:fillViewport="true"
-                    android:scrollbars="none">
-
-                    <ExpandableListView
-                        android:id="@+id/right_container_listview"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="#ffffff"
-                        android:choiceMode="singleChoice"
-                        android:groupIndicator="@null"
-                        android:scrollbars="none" />
-                </com.crushtech.testtablelayout.widget.SyncHorizontalScrollView>
-            </LinearLayout>
-        </ScrollView>
-    </com.crushtech.testtablelayout.widget.pullfresh.AbPullToRefreshView>
+                android:layout_height="200dp"
+                android:background="#ffffff"
+                android:choiceMode="singleChoice"
+                android:groupIndicator="@null"
+                android:scrollbars="none" />
+        </com.crushtech.testtablelayout.widget.SyncHorizontalScrollView>
+    </LinearLayout>
 
 </LinearLayout>

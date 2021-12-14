@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     private AbsCommonAdapter<TableModel> mLeftAdapter, mRightAdapter;
     private SyncHorizontalScrollView titleHorScv;
     private SyncHorizontalScrollView contentHorScv;
-    private AbPullToRefreshView pulltorefreshview;
     private ScrollView scrollView;
     private LinearLayout foolishL;
     private int pageNo = 0;
@@ -54,12 +53,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         init();
+
     }
 
 
     private void setListViewHeight(ExpandableListView listView,
                                    int group) {
-        ExpandableListAdapter listAdapter = (ExpandableListAdapter) listView.getExpandableListAdapter();
+        ExpandableListAdapter listAdapter = listView.getExpandableListAdapter();
         int totalHeight = 0;
         int desiredWidth = makeMeasureSpec(listView.getWidth() * listAdapter.getGroupCount(), EXACTLY);
         for (int i = 0; i < listAdapter.getGroupCount(); i++) {
@@ -82,17 +82,17 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            ViewGroup.LayoutParams params = listView.getLayoutParams();
-            int height = totalHeight
-                    + (listView.getDividerHeight() * (listAdapter.getGroupCount() - 1));
-            if (height < 10)
-                height = 200;
-            params.height = height;
-            listView.setLayoutParams(params);
-            listView.requestLayout();
         }
+        ViewGroup.LayoutParams params = listView.getLayoutParams();
+        int height = totalHeight
+                + (listView.getDividerHeight() * (listAdapter.getGroupCount() - 1));
+        if (height < 10)
+            height = 200;
+        params.height = height * 7;
+        listView.setLayoutParams(params);
+        listView.requestLayout();
     }
+
 
     public void init() {
         findByid();
@@ -101,12 +101,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void findByid() {
-        pulltorefreshview = findViewById(R.id.pulltorefreshview);
-        pulltorefreshview.setPullRefreshEnable(false);
         tv_table_title_left = findViewById(R.id.tv_table_title_left);
         tv_table_title_left.setText("All Items");
         leftListView = findViewById(R.id.left_container_listview);
-        scrollView = findViewById(R.id.pull_refresh_scroll);
         rightListView = findViewById(R.id.right_container_listview);
         right_title_container = findViewById(R.id.right_title_container);
         //getLayoutInflater().inflate(R.layout.table_right_title, right_title_container);
@@ -137,9 +134,10 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<TableModel> theMan = new ArrayList<>();
         theMan.add(new TableModel("LETS GO", null));
         TOP250.add(new TableModel("The Man", theMan));
+        TOP250.add(new TableModel("The Man", theMan));
         list.add(new TableModel("TOP 250", TOP250));
-        list.add(new TableModel("Now SHOWING", TOP250));
-        list.add(new TableModel("Coming Soon", TOP250));
+//        list.add(new TableModel("Now SHOWING", TOP250));
+//        list.add(new TableModel("Coming Soon", TOP250));
 
         //TOP RIGHT
         ArrayList<TableModel> list1 = new ArrayList<>();
@@ -147,32 +145,44 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<TableModel> subList1 = new ArrayList<>();
         subList1.add(newOne(new ArrayList<>()));
         subList.add(newOne(subList1));
+        subList.add(newOne(subList1));
         list1.add(newOne(subList));
-        list1.add(newOne(subList));
-        list1.add(newOne(subList));
+//        list1.add(newOne(subList));
+//        list1.add(newOne(subList));
 
-        leftRegionsAdapter = new LeftRegionsAdapter(this, list);
         rightRegionsAdapter = new RightRegionsAdapter(this, list1);
+        leftRegionsAdapter = new LeftRegionsAdapter(this, list);
 
-
-        leftListView.setAdapter(leftRegionsAdapter);
         rightListView.setAdapter(rightRegionsAdapter);
-        setListViewHeight(leftListView, -1);
-        setListViewHeight(rightListView, -1);
+        leftListView.setAdapter(leftRegionsAdapter);
+
+      //  setListViewHeight(rightListView, -1);
+       // setListViewHeight(leftListView, -1);
 
         rightRegionsAdapter.setChildClickListener((parent, v, groupPosition, id) -> {
-            if (!parent.isGroupExpanded(groupPosition)) {
-                leftRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+//            if (!parent.isGroupExpanded(groupPosition)) {
+//                leftRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+//            } else {
+//                leftRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+//            }
+            if (!parent.isGroupExpanded(0)) {
+                leftRegionsAdapter.getViews().get(groupPosition).expandGroup(0);
             } else {
-                leftRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+                leftRegionsAdapter.getViews().get(groupPosition).collapseGroup(0);
             }
+            //  Log.d(TAG, "initTableView: 1 " + leftRegionsAdapter.getViews().size());
             return false;
         });
         leftRegionsAdapter.setChildClickListener((parent, v, groupPosition, id) -> {
-            if (!parent.isGroupExpanded(groupPosition)) {
-                rightRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+//            if (!parent.isGroupExpanded(groupPosition)) {
+//               rightRegionsAdapter.getCurrentListView().expandGroup(groupPosition);
+//            } else {
+//                rightRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+//            }
+            if (!parent.isGroupExpanded(0)) {
+                rightRegionsAdapter.getViews().get(groupPosition).expandGroup(0);
             } else {
-                rightRegionsAdapter.getCurrentListView().collapseGroup(groupPosition);
+                rightRegionsAdapter.getViews().get(groupPosition).collapseGroup(0);
             }
             return false;
         });
@@ -180,39 +190,32 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void setListener() {
-        pulltorefreshview.setOnHeaderRefreshListener(view -> mHandler.postDelayed(() -> {
-            //        pageNo = 0;
-            //      doGetDatas(0, RefreshParams.REFRESH_DATA);
-        }, 1000));
-        pulltorefreshview.setOnFooterLoadListener(view -> mHandler.postDelayed(() -> doGetDatas(pageNo, RefreshParams.LOAD_DATA), 1000));
 
         handleExpandOnce(leftListView);
         handleExpandOnce(rightListView);
         leftListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
-            //rightRegionsAdapter.childExpandState = -1;
             if (!parent.isGroupExpanded(groupPosition)) {
-                setListViewHeight(parent, groupPosition);
-                setListViewHeight(rightListView, groupPosition);
+               // setListViewHeight(parent, groupPosition);
+               // setListViewHeight(rightListView, groupPosition);
                 rightListView.expandGroup(groupPosition);
             } else {
                 rightListView.collapseGroup(groupPosition);
-                // leftRegionsAdapter.childExpandState = -1;
             }
             return false;
         });
 
+
         rightListView.setOnGroupClickListener((parent, v, groupPosition, id) -> {
-            // leftRegionsAdapter.childExpandState = -1;
             if (!parent.isGroupExpanded(groupPosition)) {
-                setListViewHeight(parent, groupPosition);
-                setListViewHeight(leftListView, groupPosition);
+                //setListViewHeight(parent, groupPosition);
+               // setListViewHeight(leftListView, groupPosition);
                 leftListView.expandGroup(groupPosition);
             } else {
                 leftListView.collapseGroup(groupPosition);
-                //rightRegionsAdapter.childExpandState = -1;
             }
             return false;
         });
+
 
     }
 
@@ -233,19 +236,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    //模拟网络请求
-    public void doGetDatas(int pageno, int state) {
-        List<OnlineSaleBean> onlineSaleBeanList = new ArrayList<>();
-        for (int i = pageno * 20; i < 20 * (pageno + 1); i++) {
-            onlineSaleBeanList.add(new OnlineSaleBean("行标题" + i));
-        }
-        if (state == RefreshParams.REFRESH_DATA) {
-            pulltorefreshview.onHeaderRefreshFinish();
-        } else {
-            pulltorefreshview.onFooterLoadFinish();
-        }
-        //  setDatas(onlineSaleBeanList, state);
-    }
 
 
     private TableModel newOne(List<TableModel> children) {
@@ -294,21 +284,6 @@ public class MainActivity extends AppCompatActivity {
                 tableMode.setText13(onlineSaleBean.getRetailSaleOneNowRate() + "");
                 tableMode.setText14(onlineSaleBean.getOnlineSale() + "");
                 mDatas.add(tableMode);
-            }
-            boolean isMore = type == RefreshParams.LOAD_DATA;
-//            mLeftAdapter.addGroupData(mDatas, rightChildren, grandChildrenRgt, isMore);
-//            mRightAdapter.addGroupData(mDatas, leftChildren, isMore);
-            //加载数据成功，增加页数
-            pageNo++;
-            mDatas.clear();
-        } else {
-            //数据为null
-            if (type == RefreshParams.REFRESH_DATA) {
-                mLeftAdapter.clearData(true);
-                mRightAdapter.clearData(true);
-                //显示数据为空的视图
-            } else if (type == RefreshParams.LOAD_DATA) {
-                Toast.makeText(MainActivity.this, "请求json失败", Toast.LENGTH_SHORT).show();
             }
         }
     }

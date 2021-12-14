@@ -3,6 +3,7 @@ package com.crushtech.testtablelayout.base.adapter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import com.crushtech.testtablelayout.R;
 import com.crushtech.testtablelayout.models.TableModel;
 import com.crushtech.testtablelayout.widget.MyExpandedListView;
 
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -25,8 +27,9 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
     private final LayoutInflater inflater;
     public int childExpandState = -1;
     public int curPos = -1;
-    private MyExpandedListView currentListView;
+   // private MyExpandedListView currentListView;
     private ExpandableListView.OnGroupClickListener childClickListener;
+    private HashMap<Integer, MyExpandedListView> views = new HashMap<>();
 
     public LeftRegionsAdapter(Activity activity, List<TableModel> items) {
         this.items = items;
@@ -34,6 +37,9 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
         this.inflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
+    public HashMap<Integer, MyExpandedListView> getViews() {
+        return views;
+    }
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
@@ -45,36 +51,50 @@ public class LeftRegionsAdapter extends BaseExpandableListAdapter {
         return childPosition;
     }
 
-    public MyExpandedListView getCurrentListView() {
-        return currentListView;
-    }
 
     public void setChildClickListener(ExpandableListView.OnGroupClickListener childClickListener) {
         this.childClickListener = childClickListener;
     }
+
 
     @Override
     public View getChildView(int groupPosition, int childPosition,
                              boolean isLastChild, View convertView, ViewGroup parent) {
 
         TableModel item = (TableModel) getChild(groupPosition, childPosition);
-        //  MyExpandedListView expandedListView = (MyExpandedListView) convertView;
-
+        MyExpandedListView expandedListView = (MyExpandedListView) convertView;
         if (convertView == null) {
-            currentListView = new MyExpandedListView(activity);
-            currentListView.setGroupIndicator(null);
+            expandedListView = new MyExpandedListView(activity);
+            expandedListView.setGroupIndicator(null);
         }
         LeftCountriesAdapter adapter = new LeftCountriesAdapter(activity, item);
-        currentListView.setAdapter(adapter);
+        expandedListView.setAdapter(adapter);
         //setCurrentListView(expandedListView);
-//        for (int c = 0; c < adapter.getGroupCount(); c++) {
-//            currentListView.expandGroup(c);
-//        }
-        currentListView.setOnGroupClickListener((parent1, v, groupPosition1, id) -> {
-            childClickListener.onGroupClick(parent1, v, groupPosition1, id);
+
+        for (int c = 0; c < adapter.getGroupCount(); c++) {
+            expandedListView.expandGroup(c);
+        }
+       // handleExpandOnce(expandedListView);
+        expandedListView.setOnGroupClickListener((parent1, v, groupPosition1, id) -> {
+            childClickListener.onGroupClick(parent1, v, childPosition, id);
+            Log.d("TAG", "getChildView: " + getChildrenCount(groupPosition) + ":" + childPosition);
             return false;
         });
-        return currentListView;
+        views.put(childPosition, expandedListView);
+        return expandedListView;
+    }
+
+    public void handleExpandOnce(final ExpandableListView listView) {
+        listView.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
+            int previousGroup = -1;
+
+            @Override
+            public void onGroupExpand(int groupPosition) {
+                if (groupPosition != previousGroup)
+                    listView.collapseGroup(previousGroup);
+                previousGroup = groupPosition;
+            }
+        });
     }
 
     @Override

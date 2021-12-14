@@ -14,6 +14,7 @@ import com.crushtech.testtablelayout.R;
 import com.crushtech.testtablelayout.models.TableModel;
 import com.crushtech.testtablelayout.widget.MyExpandedListView;
 
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -25,8 +26,9 @@ public class RightRegionsAdapter extends BaseExpandableListAdapter {
     private final LayoutInflater inflater;
     public int childExpandState = -1;
     public int curPos = -1;
-    private MyExpandedListView currentListView;
+   // private MyExpandedListView currentListView;
     private ExpandableListView.OnGroupClickListener childClickListener;
+    private HashMap<Integer, MyExpandedListView> views = new HashMap<>();
 
     public RightRegionsAdapter(Activity activity, List<TableModel> items) {
         this.items = items;
@@ -38,8 +40,12 @@ public class RightRegionsAdapter extends BaseExpandableListAdapter {
         this.childClickListener = childClickListener;
     }
 
-    public MyExpandedListView getCurrentListView() {
-        return currentListView;
+//    public MyExpandedListView getCurrentListView() {
+//        return currentListView;
+//    }
+
+    public HashMap<Integer, MyExpandedListView> getViews() {
+        return views;
     }
 
     @Override
@@ -52,28 +58,46 @@ public class RightRegionsAdapter extends BaseExpandableListAdapter {
         return childPosition;
     }
 
+//    public void setCurrentListView(MyExpandedListView currentListView) {
+//        this.currentListView = currentListView;
+//    }
+
     @Override
     public View getChildView(int groupPosition, int childPosition,
                              boolean isLastChild, View convertView, ViewGroup parent) {
 
         TableModel item = (TableModel) getChild(groupPosition, childPosition);
-        //  MyExpandedListView expandedListView = (MyExpandedListView) convertView;
-
+        MyExpandedListView expandedListView = (MyExpandedListView) convertView;
         if (convertView == null) {
-            currentListView = new MyExpandedListView(activity);
-            currentListView.setGroupIndicator(null);
+            expandedListView = new MyExpandedListView(activity);
+            expandedListView.setGroupIndicator(null);
         }
         RightCountriesAdapter adapter = new RightCountriesAdapter(activity, item);
-        currentListView.setAdapter(adapter);
-        //setCurrentListView(expandedListView);
-//        for (int c = 0; c < adapter.getGroupCount(); c++) {
-//            currentListView.expandGroup(c);
-//        }
-        currentListView.setOnGroupClickListener((parent1, v, groupPosition1, id) -> {
-            childClickListener.onGroupClick(parent1, v, groupPosition1, id);
+        expandedListView.setAdapter(adapter);
+       // setCurrentListView(expandedListView);
+        for (int c = 0; c < adapter.getGroupCount(); c++) {
+            expandedListView.expandGroup(c);
+        }
+       // handleExpandOnce(expandedListView);
+        expandedListView.setOnGroupClickListener((parent1, v, groupPosition1, id) -> {
+            childClickListener.onGroupClick(parent1, v, childPosition, id);
             return false;
         });
-        return currentListView;
+        views.put(childPosition, expandedListView);
+        return expandedListView;
+    }
+
+    public void handleExpandOnce(final ExpandableListView listView) {
+        listView.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
+            int previousGroup = -1;
+
+            @Override
+            public void onGroupExpand(int groupPosition) {
+                if (groupPosition != previousGroup)
+                    listView.collapseGroup(previousGroup);
+                previousGroup = groupPosition;
+            }
+        });
     }
 
     @Override
